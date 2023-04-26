@@ -1,0 +1,7 @@
+{
+  "name": "Biolens",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}

@@ -1,0 +1,22 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>
+      Camera
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Camera</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-fab slot="fixed" horizontal="center" vertical="center" style="text-align: center;">
+    <ion-fab-button (click)="addNewPhoto()">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+    <ion-label>Add<br>Photo</ion-label>
+  </ion-fab>
+</ion-content>
