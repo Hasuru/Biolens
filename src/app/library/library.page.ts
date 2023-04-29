@@ -14,7 +14,7 @@ export class LibraryPage {
               public cameraService:CameraService,
               public storageService:StorageService) {}
 
-  public goToDetailPage(photoId: string) {
+  public goToDetailPage(photoId: number) {
     const path: string = "/library/" + photoId;
     this.router.navigate([path]);
   }
