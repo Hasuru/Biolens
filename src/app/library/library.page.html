@@ -17,7 +17,7 @@
     <ion-row>
       <ion-col size="5" *ngFor="let photoInfo of storageService.photoStorage">
         <ion-card (click)="goToDetailPage(photoInfo.photoId)">
-          <ion-img [src]="photoInfo.photoPath"></ion-img>
+          <ion-img [src]="photoInfo.photoUrl"></ion-img>
           <ion-card-header>
             <ion-card-title style="text-align: center;">
               Open
