@@ -3,7 +3,7 @@
     <ion-buttons slot="start">
       <ion-back-button></ion-back-button>
     </ion-buttons>
-    <ion-title>{{ selectedPhoto.photoId }}</ion-title>
+    <ion-title>{{ selectedPhoto.fileName }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -17,7 +17,7 @@
   <ion-grid>
     <ion-row>
       <ion-col>
-        <ion-img src="{{ selectedPhoto.photoPath }}"></ion-img>
+        <ion-img src="{{ selectedPhoto.photoUrl }}"></ion-img>
       </ion-col>
     </ion-row>
     <ion-row>

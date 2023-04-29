@@ -10,9 +10,9 @@ import * as Leaflet from 'leaflet';
 })
 export class PhotoDetailPage implements OnInit {
   public selectedPhoto: PhotoInfo = {
-    photoId: '',
-    photoPath: '',
-    dateTime: 0,
+    photoId: 0,
+    photoUrl: '',
+    fileName: '',
     day: 0,
     month: 0,
     year: 0,
@@ -33,7 +33,7 @@ export class PhotoDetailPage implements OnInit {
       }
 
       const photoId = paramMap.get('photoId');
-      this.selectedPhoto = this.storageService.getPhotoById(photoId!)!;
+      this.selectedPhoto = this.storageService.getPhotoById(Number(photoId!))!;
       console.log(this.selectedPhoto);
     })
   }
