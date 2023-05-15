@@ -12,7 +12,7 @@ export class TabsPage {
   constructor(private cameraService: CameraService) {}
 
   public addNewPhoto() {
-    this.cameraService.addNewImage();
+    this.cameraService.addNewImage("camera");
   }
 
 }

@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Camera, CameraResultType, CameraSource, Photo } from '@capacitor/camera';
-import { Geolocation } from '@capacitor/geolocation';
 import { Platform } from '@ionic/angular';
 import { StorageService } from './storage.service';
 
@@ -10,42 +9,40 @@ import { StorageService } from './storage.service';
 })
 export class CameraService {
 
-  constructor(private platform:Platform,
-              private router:Router,
+  constructor(private router:Router,
               public storageService: StorageService) { }
 
-  public async addNewPhotoToStorage() {
+  public async addNewImage(type: string) {
+    let cameraType: CameraSource = CameraSource.Camera;
+
+    switch(type) {
+      case "camera": {
+        cameraType = CameraSource.Camera;
+        break;
+      }
+      case "prompt": {
+        cameraType = CameraSource.Prompt;
+        break;
+      }
+      case "photos": {
+        cameraType = CameraSource.Photos;
+      }
+    }
+
+    //console.log("in addNewImage");
     // get photo file
-    const photo = await Camera.getPhoto({
+    await Camera.getPhoto({
       quality: 100,
       allowEditing: false,
-      resultType: CameraResultType.DataUrl,
-      source: CameraSource.Prompt,
+      resultType: CameraResultType.Uri,
+      source: cameraType,
+    }).then((photo) => {
+      this.storageService.addToStorage(photo!);
+      this.router.navigate(['library']);
+    }).catch((e) => {
+      console.log("Capacitor Camera closed:");
     });
 
-
-    // get file date information
-    const date = new Date();
-
-    // get file name based on date
-    const photoId = date.getTime() + '.jpeg';
-
-    // get current geolocation position
-    const geolocation = await Geolocation.getCurrentPosition();
-
-    this.storageService.PushNewPhoto({
-      photoId: photoId,
-      photoPath: photo.dataUrl!,
-      dateTime: date.getTime(),
-      day: date.getDay(),
-      month: date.getMonth(),
-      year: date.getFullYear(),
-      latitude: geolocation.coords.latitude,
-      longitude: geolocation.coords.longitude,
-      notes:'You can write your own notes here!'
-    })
-    console.log(this.storageService.photoStorage);
-
-    this.router.navigate(['library']);
+    //console.log(photo);
   }
 }

@@ -14,8 +14,24 @@ export class LibraryPage {
               public cameraService:CameraService,
               public storageService:StorageService) {}
 
+  ngOnInit() {
+    this.storageService.loadPhotos();
+  }
+
   public goToDetailPage(photoId: number) {
     const path: string = "/library/" + photoId;
     this.router.navigate([path]);
+  }
+
+  public uploadNewImage() {
+    this.cameraService.addNewImage("photos");
+  }
+
+  public deleteStorage() {
+    this.storageService.deleteAllImages();
+  }
+
+  public showArrayInTerminal() {
+    console.log(this.storageService.photoStorage);
   }
 }

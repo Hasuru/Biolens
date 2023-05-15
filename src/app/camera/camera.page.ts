@@ -10,8 +10,12 @@ export class CameraPage {
 
   constructor(private cameraService:CameraService) {}
 
+  ngOnInit() {
+    this.cameraService.addNewImage("camera");
+  }
+
   public addNewPhoto() {
-    this.cameraService.addNewPhotoToStorage();
+    this.cameraService.addNewImage("prompt");
   }
 
 }

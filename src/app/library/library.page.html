@@ -13,11 +13,26 @@
     </ion-toolbar>
   </ion-header>
 
+  <ion-chip (click)="uploadNewImage()">
+    <ion-icon name="add-circle-outline"></ion-icon>
+    <ion-label>Upload Image</ion-label>
+  </ion-chip>
+
+  <ion-chip (click)="deleteStorage()">
+    <ion-icon name="add-circle-outline"></ion-icon>
+    <ion-label>Delete Images</ion-label>
+  </ion-chip>
+
+  <ion-chip (click)="showArrayInTerminal()">
+    <ion-icon name="add-circle-outline"></ion-icon>
+    <ion-label>Console Log data</ion-label>
+  </ion-chip>
+
   <ion-grid>
     <ion-row>
-      <ion-col size="5" *ngFor="let photoInfo of storageService.photoStorage">
-        <ion-card (click)="goToDetailPage(photoInfo.photoId)">
-          <ion-img [src]="photoInfo.photoUrl"></ion-img>
+      <ion-col size="6" *ngFor="let photoInfo of storageService.photoStorage">
+        <ion-card (click)="goToDetailPage(photoInfo.fileId)">
+          <ion-img [src]="photoInfo.fileWebPath"></ion-img>
           <ion-card-header>
             <ion-card-title style="text-align: center;">
               Open

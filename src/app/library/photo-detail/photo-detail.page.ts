@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { PhotoInfo, StorageService } from 'src/app/services/storage.service';
 import * as Leaflet from 'leaflet';
+import { ActionSheetController } from '@ionic/angular';
 
 @Component({
   selector: 'app-photo-detail',
@@ -10,12 +11,10 @@ import * as Leaflet from 'leaflet';
 })
 export class PhotoDetailPage implements OnInit {
   public selectedPhoto: PhotoInfo = {
-    photoId: 0,
-    photoUrl: '',
-    fileName: '',
-    day: 0,
-    month: 0,
-    year: 0,
+    fileId: 0,
+    filePath: '',
+    fileWebPath: '',
+    date: '',
     latitude: 0,
     longitude: 0,
     notes:'',
@@ -23,8 +22,9 @@ export class PhotoDetailPage implements OnInit {
 
   public map?: Leaflet.Map;
 
-  constructor(public activatedRoute: ActivatedRoute,
-              public storageService: StorageService) { }
+  constructor(public actionsheetCtrl: ActionSheetController,
+              public activatedRoute: ActivatedRoute,
+              public storageService: StorageService,) { }
 
   ngOnInit() {
     this.activatedRoute.paramMap.subscribe(paramMap => {
@@ -38,19 +38,44 @@ export class PhotoDetailPage implements OnInit {
     })
   }
 
-  ionViewDidEnter() { this.leafletMap(); }
+  public async actionSheet() {
+    const actionSheet = await this.actionsheetCtrl.create({
+      header: 'Photos',
+      buttons:[{
+        text: 'Delete',
+        role: 'destructive',
+        icon: 'trash',
+        handler: () => {
+          this.storageService.deletePhotoFromStorage(this.selectedPhoto);
+        }
+      },
+      {
+        text: 'Cancel',
+        icon: 'close',
+        role: 'cancel',
+        handler: () => {/* do nothing */}
+      }]
+    });
 
-  leafletMap() {
-    this.map = Leaflet.map('mapId').setView([this.selectedPhoto.latitude, this.selectedPhoto.longitude], 10);
+    await actionSheet.present();
+  }
+
+  public createMap() {
+    this.map = Leaflet.map('mapId').setView([
+      this.selectedPhoto.latitude,
+      this.selectedPhoto.longitude,
+    ], 15);
+
     Leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: 'edupala.com © Angular LeafLet',
+      attribution: 'Test Map',
     }).addTo(this.map);
 
-    //const markPoint = Leaflet.marker([this.selectedPhoto.latitude, this.selectedPhoto.longitude]).addTo(this.map);
-    //this.map.addLayer(markPoint);
+    Leaflet.marker([
+      this.selectedPhoto.latitude,
+      this.selectedPhoto.longitude
+    ]).addTo(this.map);
   }
 
-  ionViewWillLeave() {
-    this.map?.remove();
-  }
+  ionViewDidEnter() { this.createMap(); }
+  ionViewWillLeave() { this.map?.remove(); }
 }
