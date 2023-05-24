@@ -27,13 +27,6 @@ export class DatabaseService {
       }).then((db: SQLiteObject) => {
         this.database = db;
         this.getPhotoTable();
-      }).then(async () => {
-        const alert = await this.alertCtrl.create({
-          header: 'DB Alert',
-          message: 'DB file created successfully',
-          buttons: ['OK'],
-        });
-        await alert.present();
       }).catch(async (e) => {
         const alert = await this.alertCtrl.create({
           header: 'DB Alert',

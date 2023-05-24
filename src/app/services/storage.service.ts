@@ -8,6 +8,7 @@ import { Router } from '@angular/router';
 import exifr from 'exifr';
 import { DatabaseService } from './database.service';
 import { DatePipe } from '@angular/common';
+import { TensorflowService } from './tensorflow.service';
 
 
 @Injectable({
@@ -20,24 +21,23 @@ export class StorageService {
   constructor(
     platform: Platform,
     private router: Router,
-    private databaseService: DatabaseService
+    //private databaseService: DatabaseService,
+    private tensorflowService: TensorflowService,
   ) {
+    console.log("Storage Constructor started");
     this.platform = platform;
+    this.tensorflowService.initialize();
+    console.log("Storage constructor done");
   }
 
   public async addToStorage(photo: Photo) {
     console.log("ADDING TO FILESYSTEM");
 
-    // get file date information
     var date = new Date();
     var datePipe = new DatePipe('en-US');
-    // get file name based on date
     const fileName = date.getTime() + '.jpeg';
-    // save image to the filesystem
     const savedPhoto = await this.saveImage(photo, fileName);
-    // get current geolocation position
     const geolocation = await Geolocation.getCurrentPosition();
-
     const dateString = datePipe.transform(date, 'dd-MM-yyyy');
 
     const photoData : PhotoInfo = ({
@@ -50,7 +50,7 @@ export class StorageService {
       notes:'You can write your own notes here!'
     });
 
-    this.databaseService.insert(photoData);
+    //this.databaseService.insert(photoData);
     this.photoStorage.unshift(photoData);
 
     // add data to database
@@ -122,7 +122,7 @@ export class StorageService {
 
   public async loadPhotos() {
     // get photos from db
-    this.photoStorage = this.databaseService.getImages();
+    //this.photoStorage = this.databaseService.getImages();
 
     // for web purposes
     if (!this.platform.is('hybrid')) {
@@ -151,7 +151,7 @@ export class StorageService {
         directory: Directory.Data,
       });
 
-      this.databaseService.delete(photo);
+      //this.databaseService.delete(photo);
       index++;
     }
 
@@ -174,7 +174,7 @@ export class StorageService {
     });
 
     // delete from database
-    this.databaseService.delete(toDeletePhoto);
+    //this.databaseService.delete(toDeletePhoto);
 
     console.log("IMAGE DELETED FROM FILESYSTEM")
     this.router.navigate(['/library']);
