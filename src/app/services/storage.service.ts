@@ -5,7 +5,6 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Platform } from '@ionic/angular';
 import { Capacitor } from '@capacitor/core';
 import { Router } from '@angular/router';
-import exifr from 'exifr';
 import { DatabaseService } from './database.service';
 import { DatePipe } from '@angular/common';
 import { TensorflowService } from './tensorflow.service';
@@ -21,24 +20,21 @@ export class StorageService {
   constructor(
     platform: Platform,
     private router: Router,
-    //private databaseService: DatabaseService,
+    private databaseService: DatabaseService,
     private tensorflowService: TensorflowService,
   ) {
-    console.log("Storage Constructor started");
     this.platform = platform;
-    this.tensorflowService.initialize();
-    console.log("Storage constructor done");
   }
 
   public async addToStorage(photo: Photo) {
-    console.log("ADDING TO FILESYSTEM");
-
     var date = new Date();
     var datePipe = new DatePipe('en-US');
     const fileName = date.getTime() + '.jpeg';
     const savedPhoto = await this.saveImage(photo, fileName);
     const geolocation = await Geolocation.getCurrentPosition();
     const dateString = datePipe.transform(date, 'dd-MM-yyyy');
+
+    this.tensorflowService.getPrediction(savedPhoto.webviewPath);
 
     const photoData : PhotoInfo = ({
       fileId: date.getTime(),
@@ -50,79 +46,38 @@ export class StorageService {
       notes:'You can write your own notes here!'
     });
 
-    //this.databaseService.insert(photoData);
+    this.databaseService.insert(photoData);
     this.photoStorage.unshift(photoData);
-
-    // add data to database
   }
 
   public async saveImage(photo: Photo, fileName: string) {
     // Convert photo to base64 format, required by Filesystem API to save
     const base64Data = await this.readAsBase64(photo);
-    //console.log(base64Data);
 
     const savedFile = await Filesystem.writeFile({
       path: fileName,
-      data: base64Data,
+      data: base64Data!,
       directory: Directory.Data
     });
 
-    try {
-      let {latitude, longitude} = await exifr.gps(Directory.Data + '/' + fileName);
-      console.log(latitude, longitude);
-    } catch (e) {
-      console.log("Error on reading lat and lon");
-    }
-
-    if (this.platform.is('hybrid')) {
-      // Display the new image by rewriting the 'file://' path to HTTP
-      // Details: https://ionicframework.com/docs/building/webview#file-protocol
-      return {
-        filepath: savedFile.uri,
-        webviewPath: Capacitor.convertFileSrc(savedFile.uri),
-      };
-    }
-    else {
-      // Use webPath to display the new image instead of base64 since it's
-      // already loaded into memory
-      return {
-        filepath: fileName,
-        webviewPath: photo.webPath
-      };
-    }
+    // mobile only
+    return {
+      filepath: savedFile.uri,
+      webviewPath: Capacitor.convertFileSrc(savedFile.uri),
+    };
   }
 
   private async readAsBase64(photo: Photo) {
-    // "hybrid" will detect Cordova or Capacitor
-    if (this.platform.is('hybrid')) {
-      // Read the file into base64 format
-      const file = await Filesystem.readFile({
-        path: photo.path!,
-      });
-
-      return file.data;
-    }
-    else {
-      // Fetch the photo, read as a blob, then convert to base64 format
-      const response = await fetch(photo.webPath!);
-      const blob = await response.blob();
-
-      return await this.convertBlobToBase64(blob) as string;
-    }
+    //mobile only
+    const file = await Filesystem.readFile({
+      path: photo.path!,
+    });
+    return file.data;
   }
-
-  private convertBlobToBase64 = (blob: Blob) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = () => {
-        resolve(reader.result);
-    };
-    reader.readAsDataURL(blob);
-  });
 
   public async loadPhotos() {
     // get photos from db
-    //this.photoStorage = this.databaseService.getImages();
+    this.photoStorage = this.databaseService.getImages();
 
     // for web purposes
     if (!this.platform.is('hybrid')) {
@@ -131,7 +86,6 @@ export class StorageService {
           path: image.filePath,
           directory: Directory.Data,
         });
-
         image.fileWebPath = `data:image/jpeg;base64,${readPhoto.data}`;
       }
     }
@@ -139,7 +93,6 @@ export class StorageService {
 
   // for debug purposes
   public async deleteAllImages() {
-    //console.log("DELETING ALL FILES IN FILESYSTEM");
     var index = 0;
     for (var photo of this.photoStorage) {
       this.photoStorage.splice(index, 1);
@@ -151,11 +104,9 @@ export class StorageService {
         directory: Directory.Data,
       });
 
-      //this.databaseService.delete(photo);
+      this.databaseService.delete(photo);
       index++;
     }
-
-    // delete from database
   }
 
   public async deletePhotoFromStorage(toDeletePhoto: PhotoInfo) {
@@ -174,9 +125,7 @@ export class StorageService {
     });
 
     // delete from database
-    //this.databaseService.delete(toDeletePhoto);
-
-    console.log("IMAGE DELETED FROM FILESYSTEM")
+    this.databaseService.delete(toDeletePhoto);
     this.router.navigate(['/library']);
   }
 

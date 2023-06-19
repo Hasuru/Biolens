@@ -1,46 +1,79 @@
 import { Injectable } from '@angular/core';
-import {loadGraphModel} from '@tensorflow/tfjs-converter';
-import {Tensor3D,  browser, cast, expandDims} from '@tensorflow/tfjs-core';
-import { ImageClassificationModel } from '@tensorflow/tfjs-automl';
+import * as tf from '@tensorflow/tfjs';
+import { loadGraphModel } from '@tensorflow/tfjs-converter';
+import { ImageClassificationModel, ImageInput } from '@tensorflow/tfjs-automl';
+import { AlertController } from '@ionic/angular';
+import { HttpClient } from '@angular/common/http';
+import '@tensorflow/tfjs-backend-webgl';
+
+const MODEL_URL = '../../assets/model/model.json';
+const DICT_URL = '../../assets/model/dict.txt';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TensorflowService {
-  //private model: ImageClassificationModel = null;
-  constructor() {
-    console.log("TensorFlow started");
+  private graphModel: any;
+  private dictionary: any;
+
+  constructor(
+    private alertCtrl: AlertController,
+    private httpClient: HttpClient,
+    //private model: automl.ImageClassificationModel
+  ) {
+    loadGraphModel(MODEL_URL)
+    .then ((response) => {
+      this.graphModel = response;
+      this.httpClient.get(DICT_URL, {responseType: 'text'}).subscribe((data) => {
+        this.dictionary = data.split('\n');
+        this.alertCtrl.create({
+          header:'Tensor Alert',
+          message:'Model created and Dictionary: ' + this.dictionary,
+          buttons:['OK'],
+        }).then((resp) => {resp.present()});
+      });
+    });
   }
 
-  async initialize() {
-    console.log("On tensorflow Init()");
-    const graphModel = await loadGraphModel("../../assets/model/model.json");
-    console.log("Model graph loaded");
-    //const dict = this.loadDictionary("../../assets/model/dict.txt"); // dict string[]
-    const model = new ImageClassificationModel(graphModel, [] /*dict*/);
-    console.log("MODEL : " + model);
+  getPrediction(webpath: any) {
+    const model = new ImageClassificationModel(this.graphModel, this.dictionary);
+    console.log("!!! Image Model Loaded >>> " + model);
+    const options = {centerCrop: true};
+    const predictions = model.classify(webpath,options).then((response) => {
+      this.alertCtrl.create({
+        header: 'Tensor Alert',
+        message: '' + response,
+        buttons: ['OK'],
+      }).then((res) => {res.present()});
+    }).catch((e) => {
+      this.alertCtrl.create({
+        header: 'Tensor Alert',
+        message: 'Prediction: Something went wrong:' + JSON.stringify(e),
+        buttons: ['OK'],
+      }).then((res) => {res.present()});
+    });
   }
 
-  // PROBLEMAS COM AS PACKAGES DE IMPORT DO TENSORFLOW
+  convertToTensor(base64Data: string) {
+    const binaryString = window.atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
 
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
 
-  /*base64ToTensor(imageData: string): Tensor3D {
-    const imageElement = document.createElement('img');
-    imageElement.src = 'data:image/jpeg;base64,' + imageData;
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    context!.drawImage(imageElement, 0, 0);
-    const imageDataTensor = browser.fromPixels(canvas);
-    const preprocessedTensor = cast(imageDataTensor, 'float32').expandDims();
-    return preprocessedTensor;
-  }*/
+    const imageTensor = tf.browser.fromPixels({
+      data: bytes,
+      height: 400,
+      width: 400
+    });
 
-  // traduz ficheiro em string[] cada uma contendo cada especie
-  /*public loadDictionary(file:any) {
-    var fs = require("fs");
-    var text = fs.readFileSync(file);
-    var textByLine = text.split("\n")
+    const reshapedTensor = imageTensor.reshape([
+      400,
+      400,
+      3,
+    ]);
 
-    return textByLine;
-  }*/
+    return reshapedTensor;
+  }
 }

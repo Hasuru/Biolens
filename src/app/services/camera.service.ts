@@ -28,8 +28,6 @@ export class CameraService {
       }
     }
 
-    //console.log("in addNewImage");
-    // get photo file
     await Camera.getPhoto({
       quality: 100,
       allowEditing: false,
@@ -38,10 +36,6 @@ export class CameraService {
     }).then((photo) => {
       this.storageService.addToStorage(photo!);
       this.router.navigate(['library']);
-    }).catch((e) => {
-      console.log("Capacitor Camera closed:");
     });
-
-    //console.log(photo);
   }
 }

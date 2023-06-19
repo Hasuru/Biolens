@@ -34,7 +34,6 @@ export class PhotoDetailPage implements OnInit {
 
       const photoId = paramMap.get('photoId');
       this.selectedPhoto = this.storageService.getPhotoById(Number(photoId!))!;
-      console.log(this.selectedPhoto);
     })
   }
 

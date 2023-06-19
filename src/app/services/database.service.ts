@@ -70,14 +70,7 @@ export class DatabaseService {
       (PhotoId, FilePath, WebPath, Date, Latitude, Longitude, Notes)
       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       values
-    ).then(async () => {
-      const alert = await this.alertCtrl.create({
-        header: 'DB Alert',
-        message: 'New Data added to DB',
-        buttons: ['OK'],
-      });
-      await alert.present();
-    }).catch(async (e) => {
+    ).catch(async (e) => {
       const alert = await this.alertCtrl.create({
         header: 'DB Alert',
         message: 'Error adding new data to DB: ' + JSON.stringify(e),
@@ -124,7 +117,7 @@ export class DatabaseService {
     }).catch(async (e) => {
       const alert = await this.alertCtrl.create({
         header: 'DB Alert',
-        message: 'Error on getting Images List: ' + JSON.stringify(e),
+        message: 'Error on getting Image List: ' + JSON.stringify(e),
         buttons: ['OK'],
       });
       await alert.present();

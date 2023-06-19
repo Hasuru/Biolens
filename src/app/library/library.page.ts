@@ -30,8 +30,4 @@ export class LibraryPage {
   public deleteStorage() {
     this.storageService.deleteAllImages();
   }
-
-  public showArrayInTerminal() {
-    console.log(this.storageService.photoStorage);
-  }
 }
