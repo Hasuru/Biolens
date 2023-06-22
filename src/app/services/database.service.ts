@@ -67,8 +67,8 @@ export class DatabaseService {
 
     this.database!.executeSql(
       `INSERT INTO PHOTOTABLE
-      (PhotoId, FilePath, WebPath, Date, Latitude, Longitude, Notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      (PhotoId, FilePath, WebPath, Date, Latitude, Longitude, Species, Species_Prob, Notes)
+      VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, ?)`,
       values
     ).catch(async (e) => {
       const alert = await this.alertCtrl.create({
@@ -77,6 +77,26 @@ export class DatabaseService {
         buttons: ['OK'],
       });
       await alert.present();
+    })
+  }
+
+  public updateSpecies(pred_info: any, fileId: number) {
+    const values = [
+      pred_info.label,
+      pred_info.prob,
+      fileId,
+    ];
+
+    this.database!.executeSql(
+      `UPDATE PHOTOTABLE SET Species = ?, Species_Prob = ? WHERE PhotoId = ?`, values
+    ).then(_ => {
+      this.getImages();
+    }).catch((e) => {
+      this.alertCtrl.create({
+        header: "Update Error",
+        message: "Could not update species values " + JSON.stringify(e),
+        buttons: ['OK'],
+      }).then((res) => {res.present();});
     })
   }
 

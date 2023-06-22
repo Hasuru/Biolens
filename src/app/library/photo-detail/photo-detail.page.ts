@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { PhotoInfo, StorageService } from 'src/app/services/storage.service';
 import * as Leaflet from 'leaflet';
 import { ActionSheetController } from '@ionic/angular';
+import { TensorflowService } from 'src/app/services/tensorflow.service';
+import { DatabaseService } from 'src/app/services/database.service';
 
 @Component({
   selector: 'app-photo-detail',
@@ -10,6 +12,8 @@ import { ActionSheetController } from '@ionic/angular';
   styleUrls: ['./photo-detail.page.scss'],
 })
 export class PhotoDetailPage implements OnInit {
+  @ViewChild('imgEl') imgEl: ElementRef = {} as ElementRef;
+
   public selectedPhoto: PhotoInfo = {
     fileId: 0,
     filePath: '',
@@ -24,7 +28,9 @@ export class PhotoDetailPage implements OnInit {
 
   constructor(public actionsheetCtrl: ActionSheetController,
               public activatedRoute: ActivatedRoute,
-              public storageService: StorageService,) { }
+              public storageService: StorageService,
+              public tensorflowService: TensorflowService,
+              public databaseService: DatabaseService,) { }
 
   ngOnInit() {
     this.activatedRoute.paramMap.subscribe(paramMap => {
@@ -77,4 +83,10 @@ export class PhotoDetailPage implements OnInit {
 
   ionViewDidEnter() { this.createMap(); }
   ionViewWillLeave() { this.map?.remove(); }
+
+  makePrediction() {
+    const img = this.imgEl.nativeElement;
+    const pred_info = this.tensorflowService.getPrediction(img);
+    this.databaseService.updateSpecies(pred_info, this.selectedPhoto.fileId);
+  }
 }

@@ -15,10 +15,9 @@ import { TensorflowService } from './tensorflow.service';
 })
 export class StorageService {
   public photoStorage: PhotoInfo[] = [];
-  private platform: Platform;
 
   constructor(
-    platform: Platform,
+    private platform: Platform,
     private router: Router,
     private databaseService: DatabaseService,
     private tensorflowService: TensorflowService,
@@ -33,8 +32,6 @@ export class StorageService {
     const savedPhoto = await this.saveImage(photo, fileName);
     const geolocation = await Geolocation.getCurrentPosition();
     const dateString = datePipe.transform(date, 'dd-MM-yyyy');
-
-    this.tensorflowService.getPrediction(savedPhoto.webviewPath);
 
     const photoData : PhotoInfo = ({
       fileId: date.getTime(),
@@ -51,7 +48,6 @@ export class StorageService {
   }
 
   public async saveImage(photo: Photo, fileName: string) {
-    // Convert photo to base64 format, required by Filesystem API to save
     const base64Data = await this.readAsBase64(photo);
 
     const savedFile = await Filesystem.writeFile({
@@ -68,7 +64,6 @@ export class StorageService {
   }
 
   private async readAsBase64(photo: Photo) {
-    //mobile only
     const file = await Filesystem.readFile({
       path: photo.path!,
     });
@@ -76,28 +71,14 @@ export class StorageService {
   }
 
   public async loadPhotos() {
-    // get photos from db
     this.photoStorage = this.databaseService.getImages();
-
-    // for web purposes
-    if (!this.platform.is('hybrid')) {
-      for (let image of this.photoStorage) {
-        const readPhoto = await Filesystem.readFile({
-          path: image.filePath,
-          directory: Directory.Data,
-        });
-        image.fileWebPath = `data:image/jpeg;base64,${readPhoto.data}`;
-      }
-    }
   }
 
-  // for debug purposes
   public async deleteAllImages() {
     var index = 0;
     for (var photo of this.photoStorage) {
       this.photoStorage.splice(index, 1);
 
-      // delete from the filesystem
       const fileName = photo.filePath.substring(photo.filePath.lastIndexOf('/') + 1);
       await Filesystem.deleteFile({
         path: fileName,
@@ -117,7 +98,6 @@ export class StorageService {
       }
       index++;
     }
-    // delete from the filesystem
     const fileName = toDeletePhoto.filePath.substring(toDeletePhoto.filePath.lastIndexOf('/') + 1);
     await Filesystem.deleteFile({
       path: fileName,
@@ -146,5 +126,7 @@ export interface PhotoInfo {
   date: string;
   latitude: number;
   longitude: number;
+  species?: string;
+  species_prob?: number;
   notes:string;
 }

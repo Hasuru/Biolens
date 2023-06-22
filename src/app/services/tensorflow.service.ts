@@ -15,6 +15,7 @@ const DICT_URL = '../../assets/model/dict.txt';
 export class TensorflowService {
   private graphModel: any;
   private dictionary: any;
+  private model:any;
 
   constructor(
     private alertCtrl: AlertController,
@@ -24,56 +25,48 @@ export class TensorflowService {
     loadGraphModel(MODEL_URL)
     .then ((response) => {
       this.graphModel = response;
-      this.httpClient.get(DICT_URL, {responseType: 'text'}).subscribe((data) => {
+      this.httpClient.get(DICT_URL, {responseType:  'text'}).subscribe((data) => {
         this.dictionary = data.split('\n');
-        this.alertCtrl.create({
+        this.model = new ImageClassificationModel(this.graphModel, this.dictionary);
+        /*this.alertCtrl.create({
           header:'Tensor Alert',
           message:'Model created and Dictionary: ' + this.dictionary,
           buttons:['OK'],
-        }).then((resp) => {resp.present()});
+        }).then((resp) => {resp.present()});*/
       });
     });
   }
 
-  getPrediction(webpath: any) {
-    const model = new ImageClassificationModel(this.graphModel, this.dictionary);
-    console.log("!!! Image Model Loaded >>> " + model);
-    const options = {centerCrop: true};
-    const predictions = model.classify(webpath,options).then((response) => {
+  getPrediction(img: any) {
+    this.model.classify(img).then((response: any) => {
+      let length: number = +JSON.stringify(response.length);
+      let label: string = '';
+      let prob: number = 0;
+
+      for (let i = 0; i < length; i++) {
+        if (+JSON.stringify(response[i].prob) > prob) {
+          label = JSON.stringify(response[i].label);
+          prob = +JSON.stringify(response[i].prob);
+        }
+      }
+
       this.alertCtrl.create({
-        header: 'Tensor Alert',
-        message: '' + response,
-        buttons: ['OK'],
-      }).then((res) => {res.present()});
-    }).catch((e) => {
+        header: 'Image Evaluation Results',
+        message: label + ' -> ' + prob,
+        buttons: ['NICE'],
+      }).then((res) => {res.present();});
+
+      return {
+        label: label,
+        prob: prob,
+      };
+
+    }).catch((e: any) => {
       this.alertCtrl.create({
-        header: 'Tensor Alert',
-        message: 'Prediction: Something went wrong:' + JSON.stringify(e),
+        header: 'Image Evaluation Error',
+        message: 'Prediction: Something went wrong:' + JSON.stringify(e) + ' / ' + typeof(img),
         buttons: ['OK'],
       }).then((res) => {res.present()});
     });
-  }
-
-  convertToTensor(base64Data: string) {
-    const binaryString = window.atob(base64Data);
-    const bytes = new Uint8Array(binaryString.length);
-
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-
-    const imageTensor = tf.browser.fromPixels({
-      data: bytes,
-      height: 400,
-      width: 400
-    });
-
-    const reshapedTensor = imageTensor.reshape([
-      400,
-      400,
-      3,
-    ]);
-
-    return reshapedTensor;
   }
 }
