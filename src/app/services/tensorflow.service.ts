@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import * as tf from '@tensorflow/tfjs';
 import { loadGraphModel } from '@tensorflow/tfjs-converter';
 import { ImageClassificationModel, ImageInput } from '@tensorflow/tfjs-automl';
 import { AlertController } from '@ionic/angular';
@@ -28,45 +27,34 @@ export class TensorflowService {
       this.httpClient.get(DICT_URL, {responseType:  'text'}).subscribe((data) => {
         this.dictionary = data.split('\n');
         this.model = new ImageClassificationModel(this.graphModel, this.dictionary);
-        /*this.alertCtrl.create({
-          header:'Tensor Alert',
-          message:'Model created and Dictionary: ' + this.dictionary,
-          buttons:['OK'],
-        }).then((resp) => {resp.present()});*/
       });
     });
   }
 
-  getPrediction(img: any) {
-    this.model.classify(img).then((response: any) => {
-      let length: number = +JSON.stringify(response.length);
-      let label: string = '';
-      let prob: number = 0;
-
-      for (let i = 0; i < length; i++) {
-        if (+JSON.stringify(response[i].prob) > prob) {
-          label = JSON.stringify(response[i].label);
-          prob = +JSON.stringify(response[i].prob);
-        }
-      }
-
-      this.alertCtrl.create({
-        header: 'Image Evaluation Results',
-        message: label + ' -> ' + prob,
-        buttons: ['NICE'],
-      }).then((res) => {res.present();});
-
-      return {
-        label: label,
-        prob: prob,
-      };
-
-    }).catch((e: any) => {
+  async getPrediction(img: any) {
+    const pred = await this.model.classify(img)
+    .catch((e: any) => {
       this.alertCtrl.create({
         header: 'Image Evaluation Error',
         message: 'Prediction: Something went wrong:' + JSON.stringify(e) + ' / ' + typeof(img),
         buttons: ['OK'],
       }).then((res) => {res.present()});
     });
+
+    let length = +JSON.stringify(pred.length);
+    let label: string = '';
+    let prob: number = 0;
+
+    for (let i = 0; i < length; i++) {
+      if (+JSON.stringify(pred[i].prob) > prob) {
+        prob = +JSON.stringify(pred[i].prob);
+        label = JSON.stringify(pred[i].label);
+      }
+    }
+
+    return {
+      label: label,
+      prob: prob,
+    };
   }
 }

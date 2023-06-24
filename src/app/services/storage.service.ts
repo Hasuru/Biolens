@@ -2,27 +2,24 @@ import { Injectable } from '@angular/core';
 import { Photo } from '@capacitor/camera';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Geolocation } from '@capacitor/geolocation';
-import { Platform } from '@ionic/angular';
 import { Capacitor } from '@capacitor/core';
 import { Router } from '@angular/router';
 import { DatabaseService } from './database.service';
 import { DatePipe } from '@angular/common';
-import { TensorflowService } from './tensorflow.service';
+import { AlertController } from '@ionic/angular';
 
 
 @Injectable({
   providedIn: 'root'
 })
 export class StorageService {
-  public photoStorage: PhotoInfo[] = [];
+  public imageList: PhotoInfo[] = []
 
   constructor(
-    private platform: Platform,
     private router: Router,
     private databaseService: DatabaseService,
-    private tensorflowService: TensorflowService,
   ) {
-    this.platform = platform;
+    this.imageList = this.databaseService.fetchImages();
   }
 
   public async addToStorage(photo: Photo) {
@@ -40,11 +37,14 @@ export class StorageService {
       date: dateString!,
       latitude: geolocation.coords.latitude,
       longitude: geolocation.coords.longitude,
+      species: undefined,
+      species_prob: undefined,
       notes:'You can write your own notes here!'
     });
 
+    //update list
     this.databaseService.insert(photoData);
-    this.photoStorage.unshift(photoData);
+    this.imageList = this.databaseService.fetchImages();
   }
 
   public async saveImage(photo: Photo, fileName: string) {
@@ -56,7 +56,6 @@ export class StorageService {
       directory: Directory.Data
     });
 
-    // mobile only
     return {
       filepath: savedFile.uri,
       webviewPath: Capacitor.convertFileSrc(savedFile.uri),
@@ -70,14 +69,10 @@ export class StorageService {
     return file.data;
   }
 
-  public async loadPhotos() {
-    this.photoStorage = this.databaseService.getImages();
-  }
-
   public async deleteAllImages() {
     var index = 0;
-    for (var photo of this.photoStorage) {
-      this.photoStorage.splice(index, 1);
+    for (var photo of this.imageList) {
+      this.imageList.splice(index, 1);
 
       const fileName = photo.filePath.substring(photo.filePath.lastIndexOf('/') + 1);
       await Filesystem.deleteFile({
@@ -85,16 +80,17 @@ export class StorageService {
         directory: Directory.Data,
       });
 
-      this.databaseService.delete(photo);
+      this.databaseService.delete(photo.fileId);
       index++;
     }
+    this.imageList = this.databaseService.fetchImages();
   }
 
   public async deletePhotoFromStorage(toDeletePhoto: PhotoInfo) {
     let index = 0;
-    for (var photo of this.photoStorage) {
+    for (var photo of this.imageList) {
       if (photo.fileId == toDeletePhoto.fileId) {
-        this.photoStorage.splice(index, 1);
+        this.imageList.splice(index, 1);
       }
       index++;
     }
@@ -105,17 +101,9 @@ export class StorageService {
     });
 
     // delete from database
-    this.databaseService.delete(toDeletePhoto);
+    this.databaseService.delete(toDeletePhoto.fileId);
+    this.imageList = this.databaseService.fetchImages();
     this.router.navigate(['/library']);
-  }
-
-  public getPhotoById(fileId: number) {
-    for (var photo of this.photoStorage) {
-      if (photo.fileId == fileId) {
-        return photo;
-      }
-    }
-    return;
   }
 }
 

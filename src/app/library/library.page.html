@@ -1,4 +1,4 @@
-<ion-header [translucent]="true">
+<!--<ion-header>
   <ion-toolbar>
     <ion-title>
       Library
@@ -7,21 +7,15 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Library</ion-title>
-    </ion-toolbar>
-  </ion-header>
 
-  <ion-chip (click)="uploadNewImage()">
-    <ion-icon name="add-circle-outline"></ion-icon>
-    <ion-label>Upload Image</ion-label>
-  </ion-chip>
-
-  <ion-chip (click)="deleteStorage()">
-    <ion-icon name="add-circle-outline"></ion-icon>
-    <ion-label>Delete Images</ion-label>
-  </ion-chip>
+  <ion-list>
+    <ion-item *ngFor="let photoInfo of storageService.photoStorage" (click)="goToDetailPage(photoInfo.fileId)">
+      <ion-icon slot="start" color="primary" [name]="item.unread ? 'ellipse' : ''"></ion-icon> IMPLEMENT AFTER ALL
+      <ion-thumbnail>
+        <img src={{ photoInfo.fileWebPath }}>
+      </ion-thumbnail>
+    </ion-item>
+  </ion-list>
 
   <ion-grid>
     <ion-row>
@@ -38,4 +32,29 @@
       </ion-col>
     </ion-row>
   </ion-grid>
+</ion-content>-->
+
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Library</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <ion-list lines="inset" *ngFor="let photo of imageList">
+    <ion-item (click)="goToDetailPage(photo.fileId)">
+      <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+      <ion-thumbnail slot="start">
+        <img alt="Silhouette of mountains" src={{ photo.fileWebPath }} />
+      </ion-thumbnail>
+      <ion-label>
+        <h2>{{ photo.species? photo.species : "Unknown" }}</h2>
+        <p>{{ photo.notes }}</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>
 </ion-content>

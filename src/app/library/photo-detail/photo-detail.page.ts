@@ -2,7 +2,7 @@ import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { PhotoInfo, StorageService } from 'src/app/services/storage.service';
 import * as Leaflet from 'leaflet';
-import { ActionSheetController } from '@ionic/angular';
+import { ActionSheetController, AlertController } from '@ionic/angular';
 import { TensorflowService } from 'src/app/services/tensorflow.service';
 import { DatabaseService } from 'src/app/services/database.service';
 
@@ -13,34 +13,44 @@ import { DatabaseService } from 'src/app/services/database.service';
 })
 export class PhotoDetailPage implements OnInit {
   @ViewChild('imgEl') imgEl: ElementRef = {} as ElementRef;
-
-  public selectedPhoto: PhotoInfo = {
-    fileId: 0,
-    filePath: '',
-    fileWebPath: '',
-    date: '',
-    latitude: 0,
-    longitude: 0,
-    notes:'',
-  };
-
+  private photoId: string = '';
+  public selectedPhoto: PhotoInfo;
   public map?: Leaflet.Map;
 
   constructor(public actionsheetCtrl: ActionSheetController,
               public activatedRoute: ActivatedRoute,
               public storageService: StorageService,
               public tensorflowService: TensorflowService,
-              public databaseService: DatabaseService,) { }
+              public databaseService: DatabaseService,
+              public alertCtrl: AlertController,) { }
 
   ngOnInit() {
-    this.activatedRoute.paramMap.subscribe(paramMap => {
+    this.activatedRoute.paramMap.subscribe(async paramMap => {
       if (!paramMap.has('photoId')) {
         return;
       }
 
-      const photoId = paramMap.get('photoId');
-      this.selectedPhoto = this.storageService.getPhotoById(Number(photoId!))!;
-    })
+      this.photoId = paramMap.get('photoId')!;
+      this.databaseService.getImage(+this.photoId)
+      .then((res) => {
+        this.selectedPhoto = res;
+      });
+    });
+  }
+
+  handleRefresh(event:any) {
+    setTimeout(async () => {
+      this.databaseService.getImage(+this.photoId)
+      .then((res) => {
+        this.selectedPhoto = res;
+      });
+      event.target.complete();
+    }, 2000);
+    this.alertCtrl.create({
+      header: 'Image Evaluation Results',
+      message: '' + this.selectedPhoto.species + ' / ' + this.selectedPhoto.species_prob,
+      buttons: ['NICE'],
+    }).then((res) => {res.present();});
   }
 
   public async actionSheet() {
@@ -81,12 +91,24 @@ export class PhotoDetailPage implements OnInit {
     ]).addTo(this.map);
   }
 
-  ionViewDidEnter() { this.createMap(); }
+  ionViewDidEnter() {
+    if (navigator.onLine) {
+      this.createMap();
+    }
+  }
+
   ionViewWillLeave() { this.map?.remove(); }
 
-  makePrediction() {
+  async makePrediction() {
     const img = this.imgEl.nativeElement;
-    const pred_info = this.tensorflowService.getPrediction(img);
+    const pred_info = await this.tensorflowService.getPrediction(img);
+
+    this.alertCtrl.create({
+      header: 'Image Evaluation Results',
+      message: '' + pred_info.label + ' / ' + pred_info.prob,
+      buttons: ['NICE'],
+    }).then((res) => {res.present();});
+
     this.databaseService.updateSpecies(pred_info, this.selectedPhoto.fileId);
   }
 }

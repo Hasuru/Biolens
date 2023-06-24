@@ -5,14 +5,16 @@ import { PhotoInfo } from './storage.service';
 import { AlertController, Platform } from '@ionic/angular';
 import { HttpClient } from '@angular/common/http';
 import { SQLitePorter } from '@awesome-cordova-plugins/sqlite-porter/ngx';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DatabaseService {
-  public database?: SQLiteObject;
+  private database: SQLiteObject;
+  public imageList: any = new BehaviorSubject([]);
+  private isDbReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
-  // constructor creates db if it does not exists, else use the one already there
   constructor(
     private platform: Platform,
     private sqlite: SQLite,
@@ -21,40 +23,94 @@ export class DatabaseService {
     private alertCtrl: AlertController,
   ) {
     this.platform.ready().then(() => {
-      return this.sqlite.create({
+      this.sqlite.create({
         name: 'biolens-images.db',
         location: 'default',
       }).then((db: SQLiteObject) => {
         this.database = db;
         this.getPhotoTable();
-      }).catch(async (e) => {
-        const alert = await this.alertCtrl.create({
-          header: 'DB Alert',
-          message: 'Error Creating DB: ' + JSON.stringify(e),
-          buttons: ['OK'],
-        });
-        await alert.present();
       });
     });
+  }
+
+  dbState() {
+    return this.isDbReady.asObservable();
+  }
+
+  fetchImages() : PhotoInfo[] {
+    /*this.alertCtrl.create({
+      header: 'fetch images',
+      message: '' + JSON.stringify(this.imageList),
+      buttons: ["Yup"],
+    }).then((res) => {res.present();});*/
+    return this.imageList.asObservable();
   }
 
   public getPhotoTable() {
-    this.httpClient.get(
-      'assets/dump.sql',
-      {responseType: 'text'}
-    ).subscribe(data => {
-      this.sqlPorter.importSqlToDb(this.database, data).catch(async (e) => {
-        const alert = await this.alertCtrl.create({
-          header: 'DB Alert',
-          message: 'Error importing data from dump.sql:\n' + JSON.stringify(e),
-          buttons: ['OK'],
+    this.httpClient
+      .get('assets/dump.sql', {responseType: 'text'})
+      .subscribe((data) => {
+        this.sqlPorter
+          .importSqlToDb(this.database, data)
+          .then((_) => {
+            this.getImages();
+            this.isDbReady.next(true);
+          })
+          .catch(async (e) => {
+            const alert = await this.alertCtrl.create({
+              header: 'DB Alert',
+              message: 'Error importing data from dump.sql:\n' + JSON.stringify(e),
+              buttons: ['OK'],
+            });
+            await alert.present();
         });
-        await alert.present();
-      });
     });
   }
 
-  public insert(image: PhotoInfo) {
+  /************** GET FUNCTIONS **************/
+  public async getImages() {
+    const res = await this.database
+      .executeSql('SELECT * FROM PHOTOTABLE', []);
+    let items: PhotoInfo[] = [];
+    if (res.rows.length > 0) {
+      for (var i = 0; i < res.rows.length; i++) {
+        items.push({
+          fileId: res.rows.item(i).PhotoId,
+          filePath: res.rows.item(i).FilePath,
+          fileWebPath: res.rows.item(i).WebPath,
+          date: res.rows.item(i).Date,
+          latitude: res.rows.item(i).Latitude,
+          longitude: res.rows.item(i).Longitude,
+          species: res.rows.item(i).species,
+          species_prob: res.rows.item(i).species_prob,
+          notes: res.rows.item(i).Notes,
+        });
+      }
+    }
+    this.imageList.next(items);
+  }
+
+  public async getImage(fileId: number) {
+    const response = await this.database
+      .executeSql('SELECT * FROM PHOTOTABLE WHERE PhotoId = ?', [fileId]);
+
+    const image:PhotoInfo = {
+      fileId: response.rows.item(0).PhotoId,
+      filePath: response.rows.item(0).FilePath,
+      fileWebPath: response.rows.item(0).WebPath,
+      date: response.rows.item(0).Date,
+      latitude: response.rows.item(0).Latitude,
+      longitude: response.rows.item(0).Longitude,
+      species: response.rows.item(0).species,
+      species_prob: response.rows.item(0).species_prob,
+      notes: response.rows.item(0).Notes,
+    };
+
+    return image;
+  }
+
+  /************** INSERT FUNCTIONS **************/
+  public async insert(image: PhotoInfo) {
     const values = [
       image.fileId,
       image.filePath,
@@ -65,105 +121,48 @@ export class DatabaseService {
       image.notes,
     ];
 
-    this.database!.executeSql(
-      `INSERT INTO PHOTOTABLE
-      (PhotoId, FilePath, WebPath, Date, Latitude, Longitude, Species, Species_Prob, Notes)
-      VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, ?)`,
-      values
-    ).catch(async (e) => {
-      const alert = await this.alertCtrl.create({
-        header: 'DB Alert',
-        message: 'Error adding new data to DB: ' + JSON.stringify(e),
-        buttons: ['OK'],
-      });
-      await alert.present();
-    })
+    const res = await this.database
+      .executeSql(
+        `INSERT INTO PHOTOTABLE
+        (PhotoId, FilePath, WebPath, Date, Latitude, Longitude, Species, Species_Prob, Notes)
+        VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, ?)`, values
+      );
+    this.getImages();
   }
 
-  public updateSpecies(pred_info: any, fileId: number) {
+  /************** UPDATE FUNCTIONS **************/
+  public async update(image: PhotoInfo) {
+    const data = [image.latitude, image.longitude, image.notes];
+
+    const data_1 = await this.database
+      .executeSql(
+        `UPDATE PHOTOTABLE SET
+        Latitude = ?,
+        Longitude = ?,
+        Notes = ?
+        WHERE PhotoId = ${image.fileId}`, data
+      );
+    this.getImages();
+  }
+
+  public async updateSpecies(pred_info: any, fileId: number) {
     const values = [
       pred_info.label,
       pred_info.prob,
       fileId,
     ];
 
-    this.database!.executeSql(
-      `UPDATE PHOTOTABLE SET Species = ?, Species_Prob = ? WHERE PhotoId = ?`, values
-    ).then(_ => {
-      this.getImages();
-    }).catch((e) => {
-      this.alertCtrl.create({
-        header: "Update Error",
-        message: "Could not update species values " + JSON.stringify(e),
-        buttons: ['OK'],
-      }).then((res) => {res.present();});
-    })
+    const res = await this.database
+      .executeSql(
+        `UPDATE PHOTOTABLE SET Species = ?, Species_Prob = ? WHERE PhotoId = ?`, values
+      );
+    this.getImages();
   }
 
-  public delete(image:PhotoInfo) {
-    this.database!.executeSql(
-      'DELETE FROM PHOTOTABLE WHERE PhotoId = ?', [image.fileId]
-    ).then(_ => {
-      this.getImages();
-    }).catch(async (e) => {
-      const alert = await this.alertCtrl.create({
-        header: 'DB Alert',
-        message: 'Error deleting data to DB: ' + JSON.stringify(e),
-        buttons: ['OK'],
-      });
-      await alert.present();
-    });
-  }
-
-  public getImages() {
-    var imageList: PhotoInfo[] = [];
-
-    this.database!.executeSql(
-      'SELECT * FROM PHOTOTABLE', []
-    ).then( response => {
-      if (response.rows.length > 0) {
-        for (var i  = 0; i < response.rows.length; i++) {
-          imageList.push({
-            fileId: response.rows.item(i).PhotoId,
-            filePath: response.rows.item(i).FilePath,
-            fileWebPath: response.rows.item(i).WebPath,
-            date: response.rows.item(i).Date,
-            latitude: response.rows.item(i).Latitude,
-            longitude: response.rows.item(i).Longitude,
-            notes: response.rows.item(i).Notes,
-          });
-        }
-      }
-    }).catch(async (e) => {
-      const alert = await this.alertCtrl.create({
-        header: 'DB Alert',
-        message: 'Error on getting Image List: ' + JSON.stringify(e),
-        buttons: ['OK'],
-      });
-      await alert.present();
-    });
-
-    return imageList;
-  }
-
-  public update(image: PhotoInfo) {
-    const data = [image.latitude, image.longitude, image.notes];
-
-    this.database!.executeSql(
-      `UPDATE PHOTOTABLE SET
-      Latitude = ?,
-      Longitude = ?,
-      Notes = ?
-      WHERE PhotoId = ${image.fileId}`, data
-    ).then(_ => {
-      this.getImages();
-    }).catch (async (e) => {
-      const alert = await this.alertCtrl.create({
-        header: 'DB Alert',
-        message: 'Error on updating image: ' + JSON.stringify(e),
-        buttons: ['OK'],
-      });
-      await alert.present();
-    });
+  /************** DELETE FUNCTIONS **************/
+  public async delete(fileId: number) {
+    const _ = await this.database
+      .executeSql('DELETE FROM PHOTOTABLE WHERE PhotoId = ?', [fileId]);
+    this.getImages();
   }
 }
