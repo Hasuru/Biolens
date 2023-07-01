@@ -12,7 +12,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 })
 export class DatabaseService {
   private database: SQLiteObject;
-  public imageList: any = new BehaviorSubject([]);
+  imageList: any = new BehaviorSubject([]);
   private isDbReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
   constructor(
@@ -20,16 +20,17 @@ export class DatabaseService {
     private sqlite: SQLite,
     private httpClient: HttpClient,
     private sqlPorter: SQLitePorter,
-    private alertCtrl: AlertController,
   ) {
     this.platform.ready().then(() => {
-      this.sqlite.create({
-        name: 'biolens-images.db',
-        location: 'default',
-      }).then((db: SQLiteObject) => {
-        this.database = db;
-        this.getPhotoTable();
-      });
+      this.sqlite
+        .create({
+          name: 'biolens-images.db',
+          location: 'default',
+        })
+        .then((db: SQLiteObject) => {
+          this.database = db;
+          this.getPhotoTable();
+        });
     });
   }
 
@@ -37,12 +38,7 @@ export class DatabaseService {
     return this.isDbReady.asObservable();
   }
 
-  fetchImages() : PhotoInfo[] {
-    /*this.alertCtrl.create({
-      header: 'fetch images',
-      message: '' + JSON.stringify(this.imageList),
-      buttons: ["Yup"],
-    }).then((res) => {res.present();});*/
+  fetchImages(): Observable<PhotoInfo[]> {
     return this.imageList.asObservable();
   }
 
@@ -56,62 +52,56 @@ export class DatabaseService {
             this.getImages();
             this.isDbReady.next(true);
           })
-          .catch(async (e) => {
-            const alert = await this.alertCtrl.create({
-              header: 'DB Alert',
-              message: 'Error importing data from dump.sql:\n' + JSON.stringify(e),
-              buttons: ['OK'],
-            });
-            await alert.present();
-        });
+          .catch((error) => console.log(error));
     });
   }
 
   /************** GET FUNCTIONS **************/
-  public async getImages() {
-    const res = await this.database
-      .executeSql('SELECT * FROM PHOTOTABLE', []);
-    let items: PhotoInfo[] = [];
-    if (res.rows.length > 0) {
-      for (var i = 0; i < res.rows.length; i++) {
-        items.push({
-          fileId: res.rows.item(i).PhotoId,
-          filePath: res.rows.item(i).FilePath,
-          fileWebPath: res.rows.item(i).WebPath,
-          date: res.rows.item(i).Date,
-          latitude: res.rows.item(i).Latitude,
-          longitude: res.rows.item(i).Longitude,
-          species: res.rows.item(i).species,
-          species_prob: res.rows.item(i).species_prob,
-          notes: res.rows.item(i).Notes,
-        });
-      }
-    }
-    this.imageList.next(items);
+  public getImages() {
+    return this.database
+      .executeSql('SELECT * FROM PHOTOTABLE', [])
+      .then((res) => {
+        let items: PhotoInfo[] = [];
+        if (res.rows.length > 0) {
+          for (var i = 0; i < res.rows.length; i++) {
+            items.push({
+              fileId: res.rows.item(i).PhotoId,
+              filePath: res.rows.item(i).FilePath,
+              fileWebPath: res.rows.item(i).WebPath,
+              date: res.rows.item(i).Date,
+              latitude: res.rows.item(i).Latitude,
+              longitude: res.rows.item(i).Longitude,
+              species: res.rows.item(i).Species,
+              species_prob: res.rows.item(i).Species_prob,
+              notes: res.rows.item(i).Notes,
+            });
+          }
+        }
+        this.imageList.next(items);
+      });
   }
 
-  public async getImage(fileId: number) {
-    const response = await this.database
-      .executeSql('SELECT * FROM PHOTOTABLE WHERE PhotoId = ?', [fileId]);
-
-    const image:PhotoInfo = {
-      fileId: response.rows.item(0).PhotoId,
-      filePath: response.rows.item(0).FilePath,
-      fileWebPath: response.rows.item(0).WebPath,
-      date: response.rows.item(0).Date,
-      latitude: response.rows.item(0).Latitude,
-      longitude: response.rows.item(0).Longitude,
-      species: response.rows.item(0).species,
-      species_prob: response.rows.item(0).species_prob,
-      notes: response.rows.item(0).Notes,
-    };
-
-    return image;
+  public getImage(fileId: number) {
+    return this.database
+      .executeSql('SELECT * FROM PHOTOTABLE WHERE PhotoId = ?', [fileId])
+      .then((res) => {
+        return {
+          fileId: res.rows.item(0).PhotoId,
+          filePath: res.rows.item(0).FilePath,
+          fileWebPath: res.rows.item(0).WebPath,
+          date: res.rows.item(0).Date,
+          latitude: res.rows.item(0).Latitude,
+          longitude: res.rows.item(0).Longitude,
+          species: res.rows.item(0).Species!,
+          species_prob: res.rows.item(0).Species_Prob!,
+          notes: res.rows.item(0).Notes,
+        }
+      });
   }
 
   /************** INSERT FUNCTIONS **************/
-  public async insert(image: PhotoInfo) {
-    const values = [
+  public insert(image: PhotoInfo) {
+    let values = [
       image.fileId,
       image.filePath,
       image.fileWebPath,
@@ -121,48 +111,56 @@ export class DatabaseService {
       image.notes,
     ];
 
-    const res = await this.database
+    return this.database
       .executeSql(
         `INSERT INTO PHOTOTABLE
         (PhotoId, FilePath, WebPath, Date, Latitude, Longitude, Species, Species_Prob, Notes)
         VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, ?)`, values
-      );
-    this.getImages();
+      )
+      .then((res) => {
+        this.getImages();
+      });
   }
 
   /************** UPDATE FUNCTIONS **************/
-  public async update(image: PhotoInfo) {
-    const data = [image.latitude, image.longitude, image.notes];
+  public update(image: PhotoInfo) {
+    let data = [image.latitude, image.longitude, image.notes];
 
-    const data_1 = await this.database
+    return this.database
       .executeSql(
         `UPDATE PHOTOTABLE SET
         Latitude = ?,
         Longitude = ?,
         Notes = ?
         WHERE PhotoId = ${image.fileId}`, data
-      );
-    this.getImages();
+      )
+      .then((res) => {
+        this.getImages();
+      });
   }
 
-  public async updateSpecies(pred_info: any, fileId: number) {
-    const values = [
+  public updateSpecies(pred_info: {label: string, prob: number}, fileId: number) {
+    let values = [
       pred_info.label,
       pred_info.prob,
       fileId,
     ];
 
-    const res = await this.database
+    return this.database
       .executeSql(
         `UPDATE PHOTOTABLE SET Species = ?, Species_Prob = ? WHERE PhotoId = ?`, values
-      );
-    this.getImages();
+      )
+      .then((res) => {
+        this.getImages();
+      });
   }
 
   /************** DELETE FUNCTIONS **************/
   public async delete(fileId: number) {
-    const _ = await this.database
-      .executeSql('DELETE FROM PHOTOTABLE WHERE PhotoId = ?', [fileId]);
-    this.getImages();
+    return this.database
+      .executeSql('DELETE FROM PHOTOTABLE WHERE PhotoId = ?', [fileId])
+      .then((res) => {
+        this.getImages();
+      });
   }
 }

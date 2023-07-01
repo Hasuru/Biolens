@@ -1,42 +1,9 @@
-<!--<ion-header>
-  <ion-toolbar>
-    <ion-title>
-      Library
-    </ion-title>
-  </ion-toolbar>
-</ion-header>
-
-<ion-content [fullscreen]="true">
-
-  <ion-list>
-    <ion-item *ngFor="let photoInfo of storageService.photoStorage" (click)="goToDetailPage(photoInfo.fileId)">
-      <ion-icon slot="start" color="primary" [name]="item.unread ? 'ellipse' : ''"></ion-icon> IMPLEMENT AFTER ALL
-      <ion-thumbnail>
-        <img src={{ photoInfo.fileWebPath }}>
-      </ion-thumbnail>
-    </ion-item>
-  </ion-list>
-
-  <ion-grid>
-    <ion-row>
-      <ion-col size="6" *ngFor="let photoInfo of storageService.photoStorage">
-        <ion-card (click)="goToDetailPage(photoInfo.fileId)">
-          <ion-img [src]="photoInfo.fileWebPath"></ion-img>
-          <ion-card-header>
-            <ion-card-title style="text-align: center;">
-              Open
-            </ion-card-title>
-          </ion-card-header>
-        </ion-card>
-        <p></p>
-      </ion-col>
-    </ion-row>
-  </ion-grid>
-</ion-content>-->
-
 <ion-header>
   <ion-toolbar>
     <ion-title>Library</ion-title>
+    <ion-button color="dark" slot="end" fill="clear" (click)="addNewPhotoToStorage()">
+      <ion-icon name="images-outline" style="zoom:1.3"></ion-icon>
+    </ion-button>
   </ion-toolbar>
 </ion-header>
 
@@ -45,16 +12,27 @@
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
-  <ion-list lines="inset" *ngFor="let photo of imageList">
-    <ion-item (click)="goToDetailPage(photo.fileId)">
-      <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+  <ion-list lines="full">
+    <ion-list-header>
+      Your Images
+    </ion-list-header>
+    <hr color="white">
+    <ion-item *ngFor="let data of Data">
       <ion-thumbnail slot="start">
-        <img alt="Silhouette of mountains" src={{ photo.fileWebPath }} />
+        <img alt="Ups" src="{{ data.fileWebPath? data.fileWebPath : data.filePath }}">
       </ion-thumbnail>
       <ion-label>
-        <h2>{{ photo.species? photo.species : "Unknown" }}</h2>
-        <p>{{ photo.notes }}</p>
+        <ion-text color="medium" *ngIf="!data.species">
+          <h2>Unevaluated species</h2>
+        </ion-text>
+        <ion-text color="dark" *ngIf="data.species">
+          <h2><b>{{ data.species }}</b></h2>
+        </ion-text>
+        <p>{{ data.date }}</p>
       </ion-label>
+      <div class="item-note" item-end>
+        <ion-icon name="chevron-forward-outline" style="zoom:1.7" (click)="goToDetailPage(data.fileId)"></ion-icon>
+      </div>
     </ion-item>
   </ion-list>
 </ion-content>

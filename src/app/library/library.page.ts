@@ -1,9 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, Pipe, PipeTransform } from '@angular/core';
 import { CameraService } from '../services/camera.service';
-import { PhotoInfo, StorageService } from '../services/storage.service';
+import { DatabaseService } from '../services/database.service';
 import { Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
-import { DatabaseService } from '../services/database.service';
 
 @Component({
   selector: 'app-library',
@@ -11,28 +10,40 @@ import { DatabaseService } from '../services/database.service';
   styleUrls: ['library.page.scss']
 })
 export class LibraryPage {
-  public imageList: PhotoInfo[] = [];
-  public test: PhotoInfo;
+  public Data: any[] = [];
 
-  constructor(private router: Router,
-              public cameraService:CameraService,
-              public storageService:StorageService,
-              public databaseService: DatabaseService,
-              private alertCtrl: AlertController) {}
+  constructor(
+    private databaseService: DatabaseService,
+    private cameraService: CameraService,
+    private alertCtrl: AlertController,
+    private router: Router) {}
 
-  ngOnInit() {
-    this.imageList = this.databaseService.fetchImages();
+  async ngOnInit() {
+    this.databaseService.dbState().subscribe((state) => {
+      if(state) {
+        this.databaseService.fetchImages().subscribe(item => {
+          this.Data = item;
+        })
+      }
+    });
   }
 
   handleRefresh(event:any) {
     setTimeout(() => {
-      this.imageList = this.databaseService.fetchImages();
+      this.databaseService.dbState().subscribe((state) => {
+        if(state) {
+          this.databaseService.fetchImages().subscribe(item => {
+            this.Data = item;
+          })
+        }
+      });
       event.target.complete();
     }, 2000);
+
     this.alertCtrl.create({
-      header: 'fetch images',
-      message: '' + this.imageList[0].fileId,
-      buttons: ["Yup"],
+      header: 'library items (outside)',
+      message: '' + this.Data[1].fileId,
+      buttons: ["ok"],
     }).then((res) => {res.present();});
   }
 
@@ -41,11 +52,14 @@ export class LibraryPage {
     this.router.navigate([path]);
   }
 
-  public uploadNewImage() {
-    this.cameraService.addNewImage("photos");
+  public addNewPhotoToStorage() {
+    this.cameraService.addNewImage("prompt");
   }
+}
 
-  public deleteStorage() {
-    this.storageService.deleteAllImages();
+@Pipe({name: 'between'})
+export class BetweenPipe implements PipeTransform {
+  transform(value: number, start: number, end: number): boolean{
+    return value > start && value <= end;
   }
 }

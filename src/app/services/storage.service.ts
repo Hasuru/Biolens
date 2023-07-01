@@ -13,22 +13,20 @@ import { AlertController } from '@ionic/angular';
   providedIn: 'root'
 })
 export class StorageService {
-  public imageList: PhotoInfo[] = []
-
   constructor(
     private router: Router,
     private databaseService: DatabaseService,
-  ) {
-    this.imageList = this.databaseService.fetchImages();
-  }
+    private alertCtrl: AlertController,
+  ) { }
 
   public async addToStorage(photo: Photo) {
     var date = new Date();
     var datePipe = new DatePipe('en-US');
     const fileName = date.getTime() + '.jpeg';
-    const savedPhoto = await this.saveImage(photo, fileName);
     const geolocation = await Geolocation.getCurrentPosition();
     const dateString = datePipe.transform(date, 'dd-MM-yyyy');
+
+    const savedPhoto = await this.saveImage(photo, fileName);
 
     const photoData : PhotoInfo = ({
       fileId: date.getTime(),
@@ -44,7 +42,6 @@ export class StorageService {
 
     //update list
     this.databaseService.insert(photoData);
-    this.imageList = this.databaseService.fetchImages();
   }
 
   public async saveImage(photo: Photo, fileName: string) {
@@ -69,40 +66,13 @@ export class StorageService {
     return file.data;
   }
 
-  public async deleteAllImages() {
-    var index = 0;
-    for (var photo of this.imageList) {
-      this.imageList.splice(index, 1);
-
-      const fileName = photo.filePath.substring(photo.filePath.lastIndexOf('/') + 1);
-      await Filesystem.deleteFile({
-        path: fileName,
-        directory: Directory.Data,
-      });
-
-      this.databaseService.delete(photo.fileId);
-      index++;
-    }
-    this.imageList = this.databaseService.fetchImages();
-  }
-
   public async deletePhotoFromStorage(toDeletePhoto: PhotoInfo) {
-    let index = 0;
-    for (var photo of this.imageList) {
-      if (photo.fileId == toDeletePhoto.fileId) {
-        this.imageList.splice(index, 1);
-      }
-      index++;
-    }
     const fileName = toDeletePhoto.filePath.substring(toDeletePhoto.filePath.lastIndexOf('/') + 1);
     await Filesystem.deleteFile({
       path: fileName,
       directory: Directory.Data,
     });
-
-    // delete from database
     this.databaseService.delete(toDeletePhoto.fileId);
-    this.imageList = this.databaseService.fetchImages();
     this.router.navigate(['/library']);
   }
 }

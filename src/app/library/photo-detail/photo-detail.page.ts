@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PhotoInfo, StorageService } from 'src/app/services/storage.service';
 import * as Leaflet from 'leaflet';
 import { ActionSheetController, AlertController } from '@ionic/angular';
@@ -15,46 +15,65 @@ export class PhotoDetailPage implements OnInit {
   @ViewChild('imgEl') imgEl: ElementRef = {} as ElementRef;
   private photoId: string = '';
   public selectedPhoto: PhotoInfo;
-  public map?: Leaflet.Map;
+  public probPercent: number;
+  private map?: Leaflet.Map;
 
-  constructor(public actionsheetCtrl: ActionSheetController,
-              public activatedRoute: ActivatedRoute,
-              public storageService: StorageService,
-              public tensorflowService: TensorflowService,
-              public databaseService: DatabaseService,
-              public alertCtrl: AlertController,) { }
+  // this is stupid but dont have much more time
+  public green: boolean = false;
+  public orange: boolean = false;
+  public red: boolean = false;
+
+  constructor(
+    private actionsheetCtrl: ActionSheetController,
+    private activatedRoute: ActivatedRoute,
+    private storageService: StorageService,
+    private tensorflowService: TensorflowService,
+    private databaseService: DatabaseService,
+    private router: Router,
+    private alertCtrl: AlertController,
+    ) {
+      this.photoId = this.activatedRoute.snapshot.paramMap.get('photoId')!;
+      this.databaseService.getImage(+this.photoId)
+        .then(image => {
+          this.selectedPhoto = image;
+          if (this.selectedPhoto.species_prob) {
+            this.probPercent = Math.floor(this.selectedPhoto.species_prob*100);
+            if (this.selectedPhoto.species_prob > 0.65) this.green = true;
+            else if (this.selectedPhoto.species_prob > 0.45 && this.selectedPhoto.species_prob <= 0.65) this.orange = true;
+            else this.red = true;
+          }
+        });
+    }
 
   ngOnInit() {
-    this.activatedRoute.paramMap.subscribe(async paramMap => {
-      if (!paramMap.has('photoId')) {
-        return;
-      }
-
-      this.photoId = paramMap.get('photoId')!;
-      this.databaseService.getImage(+this.photoId)
-      .then((res) => {
-        this.selectedPhoto = res;
-      });
-    });
+    this.selectedPhoto = {
+      fileId: 0,
+      filePath: '',
+      fileWebPath: '',
+      date: '',
+      latitude: 0,
+      longitude: 0,
+      species: undefined,
+      species_prob: undefined,
+      notes: '',
+    };
   }
 
   handleRefresh(event:any) {
     setTimeout(async () => {
       this.databaseService.getImage(+this.photoId)
-      .then((res) => {
-        this.selectedPhoto = res;
+      .then(image => {
+        this.selectedPhoto = image;
+        if (this.selectedPhoto.species_prob) {
+          this.probPercent = Math.floor(this.selectedPhoto.species_prob*100);
+        }
       });
       event.target.complete();
     }, 2000);
-    this.alertCtrl.create({
-      header: 'Image Evaluation Results',
-      message: '' + this.selectedPhoto.species + ' / ' + this.selectedPhoto.species_prob,
-      buttons: ['NICE'],
-    }).then((res) => {res.present();});
   }
 
-  public async actionSheet() {
-    const actionSheet = await this.actionsheetCtrl.create({
+  public async deleteSheet() {
+    const deleteSheet = await this.actionsheetCtrl.create({
       header: 'Photos',
       buttons:[{
         text: 'Delete',
@@ -72,7 +91,7 @@ export class PhotoDetailPage implements OnInit {
       }]
     });
 
-    await actionSheet.present();
+    await deleteSheet.present();
   }
 
   public createMap() {
@@ -82,7 +101,7 @@ export class PhotoDetailPage implements OnInit {
     ], 15);
 
     Leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: 'Test Map',
+      attribution: 'Location Taken',
     }).addTo(this.map);
 
     Leaflet.marker([
@@ -99,16 +118,32 @@ export class PhotoDetailPage implements OnInit {
 
   ionViewWillLeave() { this.map?.remove(); }
 
-  async makePrediction() {
+  makePrediction() {
     const img = this.imgEl.nativeElement;
-    const pred_info = await this.tensorflowService.getPrediction(img);
+    this.tensorflowService.model.classify(img).then((pred:any) => {
+      let length = +JSON.stringify(pred.length);
+      let label: string = '';
+      let prob: number = 0;
 
-    this.alertCtrl.create({
-      header: 'Image Evaluation Results',
-      message: '' + pred_info.label + ' / ' + pred_info.prob,
-      buttons: ['NICE'],
-    }).then((res) => {res.present();});
+      for (let i = 0; i < length; i++) {
+        if (+JSON.stringify(pred[i].prob) > prob) {
+          prob = +JSON.stringify(pred[i].prob);
+          label = pred[i].label;
+        }
+      }
 
-    this.databaseService.updateSpecies(pred_info, this.selectedPhoto.fileId);
+      if (prob >= 0.2) {
+        this.databaseService.updateSpecies({prob, label}, +this.photoId)
+          .then(_ => {
+            this.router.navigate(['/library']);
+          });
+      } else {
+        this.alertCtrl.create({
+          header: "Image Evaluation",
+          message: "Model could not evaluate species in question",
+          buttons: ['Ok'],
+        }).then(res => res.present());
+      }
+    });
   }
 }
