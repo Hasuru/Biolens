@@ -19,7 +19,8 @@
     <hr color="white">
     <ion-item *ngFor="let data of Data">
       <ion-thumbnail slot="start">
-        <img alt="Ups" src="{{ data.fileWebPath? data.fileWebPath : data.filePath }}">
+        <!--<img alt="Ups" src="{{ data.filePath? data.filePath : data.fileWebPath }}">-->
+        <img alt="Ups" src="{{data.filePath}}">
       </ion-thumbnail>
       <ion-label>
         <ion-text color="medium" *ngIf="!data.species">

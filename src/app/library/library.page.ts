@@ -23,6 +23,11 @@ export class LibraryPage {
       if(state) {
         this.databaseService.fetchImages().subscribe(item => {
           this.Data = item;
+          this.alertCtrl.create({
+            header: "input test",
+            message: this.Data[0].species + ':' + this.Data[0].filePath + "  -----  " + this.Data[0].fileWebPath,
+            buttons: ["ok"],
+          }).then(res => res.present());
         })
       }
     });
@@ -39,12 +44,6 @@ export class LibraryPage {
       });
       event.target.complete();
     }, 2000);
-
-    this.alertCtrl.create({
-      header: 'library items (outside)',
-      message: '' + this.Data[1].fileId,
-      buttons: ["ok"],
-    }).then((res) => {res.present();});
   }
 
   public goToDetailPage(photoId: number) {
