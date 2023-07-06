@@ -68,7 +68,7 @@ The App is divided in different tabs, each one with separate implementations all
 The implementation of code is divided in two main types of files apart from the HTML and CSS implementations:
   - **Page files**: Files that make the connection with the HTML file of each page;
   - **Service files**: Files that contain the implementation of the different components the app has (camera, filesystem, database and evaluation model)
-    > This types of files are all grouped in a single directory and should only be used by page files
+    > These types of files are all grouped in a single directory and should only be used by page files
 
 ---
 
