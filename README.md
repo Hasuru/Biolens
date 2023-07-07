@@ -7,11 +7,11 @@ It has been developed by *Luís Lopes* and *Eduardo R. B. Marques*, professors a
 
 At the moment there are four different main models, which are:
   1. **Dragonlens**: For *dragonfly* classifications;
-  2. **Floralens**: For *plant* and *flower* classifications;
+  2. **Floralens**: For *plant* classifications;
   3. **Lepilens**: For *butterfly* classifications;
   4. **Mothlens**: For *moth* classifications;
 
-An earlier version of the **Lepilens** model can also be using by the already existing Lepilens iOS app.
+An earlier version of the **Lepilens** model can also be tested by the already existing Lepilens iOS app.
 
 This project consists in bringing the **Floralens** model for iOS and Android platforms, without the need to construct two different versions of source-code and instead
 using the Ionic Framework with Angular for the implementation of the mobile app.
