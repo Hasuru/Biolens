@@ -3,6 +3,7 @@ import { CameraService } from '../services/camera.service';
 import { DatabaseService } from '../services/database.service';
 import { Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
+import { Directory, Filesystem } from '@capacitor/filesystem';
 
 @Component({
   selector: 'app-library',
@@ -21,13 +22,8 @@ export class LibraryPage {
   async ngOnInit() {
     this.databaseService.dbState().subscribe((state) => {
       if(state) {
-        this.databaseService.fetchImages().subscribe(item => {
+        this.databaseService.fetchImages().subscribe(async item => {
           this.Data = item;
-          this.alertCtrl.create({
-            header: "input test",
-            message: this.Data[0].species + ':' + this.Data[0].filePath + "  -----  " + this.Data[0].fileWebPath,
-            buttons: ["ok"],
-          }).then(res => res.present());
         })
       }
     });
@@ -53,12 +49,5 @@ export class LibraryPage {
 
   public addNewPhotoToStorage() {
     this.cameraService.addNewImage("prompt");
-  }
-}
-
-@Pipe({name: 'between'})
-export class BetweenPipe implements PipeTransform {
-  transform(value: number, start: number, end: number): boolean{
-    return value > start && value <= end;
   }
 }

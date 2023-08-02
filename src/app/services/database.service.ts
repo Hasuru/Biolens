@@ -24,7 +24,7 @@ export class DatabaseService {
     this.platform.ready().then(() => {
       this.sqlite
         .create({
-          name: 'biolens-images.db',
+          name: 'Biolens.db',
           location: 'default',
         })
         .then((db: SQLiteObject) => {
@@ -65,9 +65,9 @@ export class DatabaseService {
         if (res.rows.length > 0) {
           for (var i = 0; i < res.rows.length; i++) {
             items.push({
-              fileId: res.rows.item(i).PhotoId,
+              fileId: res.rows.item(i).FileId,
               filePath: res.rows.item(i).FilePath,
-              fileWebPath: res.rows.item(i).WebPath,
+              webviewPath: res.rows.item(i).WebviewPath,
               date: res.rows.item(i).Date,
               latitude: res.rows.item(i).Latitude,
               longitude: res.rows.item(i).Longitude,
@@ -83,12 +83,12 @@ export class DatabaseService {
 
   public getImage(fileId: number) {
     return this.database
-      .executeSql('SELECT * FROM PHOTOTABLE WHERE PhotoId = ?', [fileId])
+      .executeSql('SELECT * FROM PHOTOTABLE WHERE FileId = ?', [fileId])
       .then((res) => {
         return {
-          fileId: res.rows.item(0).PhotoId,
+          fileId: res.rows.item(0).FileId,
           filePath: res.rows.item(0).FilePath,
-          fileWebPath: res.rows.item(0).WebPath,
+          webviewPath: res.rows.item(0).WebviewPath,
           date: res.rows.item(0).Date,
           latitude: res.rows.item(0).Latitude,
           longitude: res.rows.item(0).Longitude,
@@ -104,7 +104,7 @@ export class DatabaseService {
     let values = [
       image.fileId,
       image.filePath,
-      image.fileWebPath,
+      image.webviewPath,
       image.date,
       image.latitude,
       image.longitude,
@@ -114,7 +114,7 @@ export class DatabaseService {
     return this.database
       .executeSql(
         `INSERT INTO PHOTOTABLE
-        (PhotoId, FilePath, WebPath, Date, Latitude, Longitude, Species, Species_Prob, Notes)
+        (FileId, FilePath, WebviewPath, Date, Latitude, Longitude, Species, Species_Prob, Notes)
         VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, ?)`, values
       )
       .then((res) => {
@@ -132,7 +132,7 @@ export class DatabaseService {
         Latitude = ?,
         Longitude = ?,
         Notes = ?
-        WHERE PhotoId = ${image.fileId}`, data
+        WHERE FileId = ${image.fileId}`, data
       )
       .then((res) => {
         this.getImages();
@@ -148,7 +148,7 @@ export class DatabaseService {
 
     return this.database
       .executeSql(
-        `UPDATE PHOTOTABLE SET Species = ?, Species_Prob = ? WHERE PhotoId = ?`, values
+        `UPDATE PHOTOTABLE SET Species = ?, Species_Prob = ? WHERE FileId = ?`, values
       )
       .then((res) => {
         this.getImages();
@@ -158,7 +158,7 @@ export class DatabaseService {
   /************** DELETE FUNCTIONS **************/
   public async delete(fileId: number) {
     return this.database
-      .executeSql('DELETE FROM PHOTOTABLE WHERE PhotoId = ?', [fileId])
+      .executeSql('DELETE FROM PHOTOTABLE WHERE FileId = ?', [fileId])
       .then((res) => {
         this.getImages();
       });

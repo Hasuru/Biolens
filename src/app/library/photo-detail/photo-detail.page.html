@@ -4,7 +4,7 @@
       <ion-back-button></ion-back-button>
     </ion-buttons>
       <ion-text *ngIf="!selectedPhoto.species">
-        <ion-title>Unevaluated Species</ion-title>
+        <ion-title>Unidentified</ion-title>
       </ion-text>
       <ion-text color="success" *ngIf="green">
         <ion-title>{{ selectedPhoto.species }}</ion-title>
@@ -38,27 +38,18 @@
     </ion-row>
     <ion-row>
       <ion-col>
-        <img #imgEl src="{{ selectedPhoto.fileWebPath? selectedPhoto.fileWebPath: selectedPhoto.filePath }}">
+        <img #imgEl src="{{ selectedPhoto.webviewPath }}">
       </ion-col>
     </ion-row>
     <ion-row>
       <ion-col>
         <ion-item>
-          <ion-label>
-            <h3>Date</h3>
-            <p>{{ selectedPhoto.date }}</p>
-          </ion-label>
-        </ion-item>
-        <ion-item>
-          <ion-label>
-            <h3>Photo taken at</h3>
-            <p>({{ selectedPhoto.latitude }},{{ selectedPhoto.longitude }})</p>
-          </ion-label>
-        </ion-item>
-        <ion-item>
+          <ion-button slot="end" color="dark" fill="clear" (click)="makePrediction()">
+            <ion-icon name="create"></ion-icon>
+          </ion-button>
           <ion-label>
             <h3>Species</h3>
-            <ion-text *ngIf="!selectedPhoto.species">
+            <ion-text color="medium" *ngIf="!selectedPhoto.species">
               <p>Unevaluated</p>
             </ion-text>
             <ion-text color="success" *ngIf="green">
@@ -73,6 +64,18 @@
               <p>[{{ probPercent }}%]
                 {{ selectedPhoto.species }}</p>
             </ion-text>
+          </ion-label>
+        </ion-item>
+        <ion-item>
+          <ion-label>
+            <h3>Date</h3>
+            <p>{{ selectedPhoto.date }}</p>
+          </ion-label>
+        </ion-item>
+        <ion-item>
+          <ion-label>
+            <h3>Coordinates</h3>
+            <p>({{ selectedPhoto.latitude }},{{ selectedPhoto.longitude }})</p>
           </ion-label>
         </ion-item>
       </ion-col>

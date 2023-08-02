@@ -2,9 +2,9 @@ CREATE TABLE IF NOT EXISTS
 PHOTOTABLE
 (
   Id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  PhotoId       INTEGER NOT NULL,
+  FileId        INTEGER NOT NULL,
   FilePath      TEXT NOT NULL,
-  WebPath       TEXT NOT NULL,
+  WebviewPath   TEXT NOT NULL,
   Date          DATE NOT NULL,
   Latitude      INTEGER NOT NULL,
   Longitude     INTEGER NOT NULL,

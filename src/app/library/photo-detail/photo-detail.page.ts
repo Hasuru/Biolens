@@ -5,6 +5,7 @@ import * as Leaflet from 'leaflet';
 import { ActionSheetController, AlertController } from '@ionic/angular';
 import { TensorflowService } from 'src/app/services/tensorflow.service';
 import { DatabaseService } from 'src/app/services/database.service';
+import { Directory } from '@capacitor/filesystem';
 
 @Component({
   selector: 'app-photo-detail',
@@ -12,6 +13,8 @@ import { DatabaseService } from 'src/app/services/database.service';
   styleUrls: ['./photo-detail.page.scss'],
 })
 export class PhotoDetailPage implements OnInit {
+  public DIRPATH = Directory.Data;
+
   @ViewChild('imgEl') imgEl: ElementRef = {} as ElementRef;
   private photoId: string = '';
   public selectedPhoto: PhotoInfo;
@@ -49,7 +52,7 @@ export class PhotoDetailPage implements OnInit {
     this.selectedPhoto = {
       fileId: 0,
       filePath: '',
-      fileWebPath: '',
+      webviewPath: '',
       date: '',
       latitude: 0,
       longitude: 0,

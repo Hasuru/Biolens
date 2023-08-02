@@ -20,11 +20,11 @@
     <ion-item *ngFor="let data of Data">
       <ion-thumbnail slot="start">
         <!--<img alt="Ups" src="{{ data.filePath? data.filePath : data.fileWebPath }}">-->
-        <img alt="Ups" src="{{data.filePath}}">
+        <img alt="Ups" src="{{data.webviewPath}}">
       </ion-thumbnail>
       <ion-label>
         <ion-text color="medium" *ngIf="!data.species">
-          <h2>Unevaluated species</h2>
+          <h2>Unidentified</h2>
         </ion-text>
         <ion-text color="dark" *ngIf="data.species">
           <h2><b>{{ data.species }}</b></h2>
